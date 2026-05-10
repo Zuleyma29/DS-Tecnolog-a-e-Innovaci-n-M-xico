@@ -1,25 +1,100 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import AdminSidebar from "../components/AdminSidebar";
+
+import {
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+  limit,
+} from "firebase/firestore";
+
+import { db } from "../../../lib/firebase";
 
 import {
   List,
   CheckSquare,
   ArrowRight,
   Mail,
-  Clock,
-  BarChart3,
 } from "lucide-react";
 
 export default function DashboardAdmin() {
   const [open, setOpen] = useState(true);
+  const [cotizaciones, setCotizaciones] = useState([]);
+  const [mensajes, setMensajes] = useState([]);
+
+  useEffect(() => {
+    const qCotizaciones = query(
+      collection(db, "cotizaciones"),
+      orderBy("fecha", "desc"),
+      limit(5)
+    );
+
+    const unsubscribeCotizaciones = onSnapshot(qCotizaciones, (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setCotizaciones(data);
+    });
+
+    const unsubscribeMensajes = onSnapshot(
+      collection(db, "mensajes"),
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        setMensajes(data);
+      }
+    );
+
+    return () => {
+      unsubscribeCotizaciones();
+      unsubscribeMensajes();
+    };
+  }, []);
+
+  const solicitudesPendientes = cotizaciones.filter(
+    (item) => item.estado === "Pendiente" || !item.estado
+  ).length;
+
+  const solicitudesAtendidas = cotizaciones.filter(
+    (item) => item.estado === "Atendida"
+  ).length;
+
+  const mensajesNoLeidos = mensajes.filter(
+    (item) => item.estado === "No leído" || item.leido === false
+  ).length;
+
+  const formatearFecha = (fecha) => {
+    if (!fecha) return "Sin fecha";
+
+    if (fecha?.toDate) {
+      return fecha.toDate().toLocaleDateString("es-MX", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    }
+
+    return "Sin fecha";
+  };
 
   return (
     <div className="min-h-screen flex bg-[#f5f7fb] text-[#12345a]">
       <AdminSidebar open={open} setOpen={setOpen} />
 
-      <main className={`min-h-screen px-8 py-8 transition-all duration-300 ${open ? "ml-72" : "ml-0" }`}>
+      <main
+        className={`min-h-screen w-full px-8 py-8 transition-all duration-300 ${
+          open ? "ml-72" : "ml-0"
+        }`}
+      >
         <section className="max-w-7xl mx-auto">
           <div className="mb-10">
             <p className="text-sm font-semibold text-[#5577f2] mb-2">
@@ -40,59 +115,66 @@ export default function DashboardAdmin() {
             <Card
               icon={<List size={34} />}
               title="Solicitudes nuevas"
-              number="0"
+              number={solicitudesPendientes}
               text="Pendientes por revisar"
+              href="/admin/cotizacion"
             />
 
             <Card
               icon={<Mail size={34} />}
               title="Mensajes recibidos"
-              number="0"
+              number={mensajesNoLeidos}
               text="No leídos"
+              href="/admin/mensaje"
             />
 
             <Card
               icon={<CheckSquare size={34} />}
               title="Solicitudes atendidas"
-              number="0"
-              text="Este mes"
+              number={solicitudesAtendidas}
+              text="Registradas como atendidas"
+              href="/admin/cotizacion"
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-            <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-lg font-bold text-[#0f2e4f]">
-                    Solicitudes recientes
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    Últimas solicitudes enviadas por clientes.
-                  </p>
-                </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-10">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-bold text-[#0f2e4f]">
+                  Solicitudes recientes
+                </h2>
 
-                <button className="text-sm bg-[#0f2e4f] text-white px-4 py-2 rounded-xl hover:bg-[#173f73] transition">
-                  Ver todas
-                </button>
+                <p className="text-sm text-gray-500">
+                  Últimas solicitudes enviadas por clientes.
+                </p>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead>
-                    <tr className="bg-[#eef3ff] text-[#0f2e4f]">
-                      <th className="py-4 px-4 font-bold rounded-l-xl">
-                        Cliente
-                      </th>
-                      <th className="py-4 px-4 font-bold">Servicio</th>
-                      <th className="py-4 px-4 font-bold">Fecha</th>
-                      <th className="py-4 px-4 font-bold">Estado</th>
-                      <th className="py-4 px-4 font-bold rounded-r-xl">
-                        Acción
-                      </th>
-                    </tr>
-                  </thead>
+              <Link
+                href="/admin/cotizacion"
+                className="text-sm bg-[#0f2e4f] text-white px-4 py-2 rounded-xl hover:bg-[#173f73] transition"
+              >
+                Ver todas
+              </Link>
+            </div>
 
-                  <tbody>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead>
+                  <tr className="bg-[#eef3ff] text-[#0f2e4f]">
+                    <th className="py-4 px-4 font-bold rounded-l-xl">
+                      Cliente
+                    </th>
+                    <th className="py-4 px-4 font-bold">Servicio</th>
+                    <th className="py-4 px-4 font-bold">Fecha</th>
+                    <th className="py-4 px-4 font-bold">Estado</th>
+                    <th className="py-4 px-4 font-bold rounded-r-xl">
+                      Acción
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {cotizaciones.length === 0 ? (
                     <tr>
                       <td
                         colSpan="5"
@@ -101,39 +183,49 @@ export default function DashboardAdmin() {
                         Aún no hay solicitudes registradas.
                       </td>
                     </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                  ) : (
+                    cotizaciones.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="border-b border-gray-100 hover:bg-gray-50 transition"
+                      >
+                        <td className="py-4 px-4 font-semibold text-[#0f2e4f]">
+                          {item.nombreEmpresa || item.nombre || "Sin nombre"}
+                        </td>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="bg-[#eef3ff] text-[#5577f2] p-3 rounded-xl">
-                  <BarChart3 size={24} />
-                </div>
+                        <td className="py-4 px-4 text-gray-600">
+                          {item.servicio || "Cotización"}
+                        </td>
 
-                <div>
-                  <h3 className="font-bold text-[#0f2e4f]">
-                    Resumen general
-                  </h3>
-                  <p className="text-sm text-gray-500">Actividad del sistema</p>
-                </div>
-              </div>
+                        <td className="py-4 px-4 text-gray-600">
+                          {formatearFecha(item.fecha)}
+                        </td>
 
-              <div className="space-y-4">
-                <InfoItem label="Cotizaciones pendientes" value="0" />
-                <InfoItem label="Mensajes sin leer" value="0" />
-                <InfoItem label="Total de registros" value="0" />
-              </div>
+                        <td className="py-4 px-4">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              item.estado === "Atendida"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-yellow-100 text-yellow-700"
+                            }`}
+                          >
+                            {item.estado || "Pendiente"}
+                          </span>
+                        </td>
 
-              <div className="mt-8 bg-[#f5f7fb] rounded-xl p-4 flex gap-3">
-                <Clock className="text-[#5577f2]" size={22} />
-
-                <p className="text-sm text-gray-600">
-                  Cuando conectes la base de datos, aquí se mostrará la
-                  actividad real del administrador.
-                </p>
-              </div>
+                        <td className="py-4 px-4">
+                          <Link
+                            href="/admin/cotizacion"
+                            className="text-[#5577f2] font-semibold hover:underline"
+                          >
+                            Ver
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </section>
@@ -142,7 +234,7 @@ export default function DashboardAdmin() {
   );
 }
 
-function Card({ icon, title, number, text }) {
+function Card({ icon, title, number, text, href }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition">
       <div className="flex items-start justify-between">
@@ -150,9 +242,12 @@ function Card({ icon, title, number, text }) {
           {icon}
         </div>
 
-        <button className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-[#0f2e4f] hover:bg-[#eef3ff] transition">
+        <Link
+          href={href}
+          className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-[#0f2e4f] hover:bg-[#eef3ff] transition"
+        >
           <ArrowRight size={20} />
-        </button>
+        </Link>
       </div>
 
       <div className="mt-6">
@@ -164,15 +259,6 @@ function Card({ icon, title, number, text }) {
 
         <p className="text-sm text-gray-500 mt-1">{text}</p>
       </div>
-    </div>
-  );
-}
-
-function InfoItem({ label, value }) {
-  return (
-    <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-      <span className="text-sm text-gray-600">{label}</span>
-      <span className="font-bold text-[#0f2e4f]">{value}</span>
     </div>
   );
 }
