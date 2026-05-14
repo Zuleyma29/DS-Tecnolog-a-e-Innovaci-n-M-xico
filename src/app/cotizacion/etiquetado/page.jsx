@@ -27,6 +27,8 @@ export default function SolucionEtiquetado() {
   const [enviando, setEnviando] = useState(false);
   const [mensajeError, setMensajeError] = useState("");
 
+  const [modalExito, setModalExito] = useState(false);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -115,7 +117,7 @@ export default function SolucionEtiquetado() {
         fecha: serverTimestamp(),
       });
 
-      alert("Solicitud enviada correctamente");
+      setModalExito(true);
 
       setFormData({
         nombreEmpresa: "",
@@ -534,6 +536,45 @@ export default function SolucionEtiquetado() {
           </div>
         </form>
       </section>
+      {modalExito && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+    <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl">
+      <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-[#0f2e4f]">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-9 w-9"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      </div>
+
+      <h2 className="mb-3 text-2xl font-extrabold text-[#0f2e4f]">
+        Solicitud enviada
+      </h2>
+
+      <p className="mb-7 text-sm leading-relaxed text-gray-600">
+        Tu solicitud de cotización fue enviada correctamente. Nuestro equipo
+        revisará la información y se pondrá en contacto contigo.
+      </p>
+
+      <button
+        type="button"
+        onClick={() => setModalExito(false)}
+        className="w-full rounded-full bg-[#0f2e4f] px-6 py-3 font-semibold text-white shadow-md transition hover:bg-[#173f73]"
+      >
+        Aceptar
+      </button>
+    </div>
+  </div>
+)}
     </main>
   );
 }

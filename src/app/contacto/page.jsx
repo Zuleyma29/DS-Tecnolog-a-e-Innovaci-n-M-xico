@@ -14,29 +14,34 @@ export default function Contacto() {
   });
 
   const [enviando, setEnviando] = useState(false);
+  const [mensajeError, setMensajeError] = useState("");
+  const [modalExito, setModalExito] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+
+    setMensajeError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (
-      !formData.nombre ||
-      !formData.correo ||
-      !formData.asunto ||
-      !formData.mensaje
+      !formData.nombre.trim() ||
+      !formData.correo.trim() ||
+      !formData.asunto.trim() ||
+      !formData.mensaje.trim()
     ) {
-      alert("Por favor completa todos los campos");
+      setMensajeError("Por favor completa todos los campos antes de enviar el mensaje.");
       return;
     }
 
     try {
       setEnviando(true);
+      setMensajeError("");
 
       await addDoc(collection(db, "mensajes"), {
         nombre: formData.nombre,
@@ -47,7 +52,7 @@ export default function Contacto() {
         fecha: serverTimestamp(),
       });
 
-      alert("Mensaje enviado correctamente");
+      setModalExito(true);
 
       setFormData({
         nombre: "",
@@ -57,7 +62,7 @@ export default function Contacto() {
       });
     } catch (error) {
       console.log(error);
-      alert("Ocurrió un error al enviar el mensaje");
+      setMensajeError("Ocurrió un error al enviar el mensaje. Inténtalo nuevamente.");
     } finally {
       setEnviando(false);
     }
@@ -123,6 +128,12 @@ export default function Contacto() {
                 rows="6"
                 className="w-full bg-gray-100 rounded-xl px-4 py-4 outline-none text-gray-700 resize-none focus:ring-2 focus:ring-blue-300"
               ></textarea>
+
+              {mensajeError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-medium">
+                  {mensajeError}
+                </div>
+              )}
 
               <div className="flex justify-end pt-4">
                 <button
@@ -194,6 +205,46 @@ export default function Contacto() {
           </div>
         </div>
       </section>
+
+      {modalExito && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl">
+            <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-10 w-10 text-green-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+
+            <h2 className="text-3xl font-extrabold text-[#0f2e4f] mb-3">
+              Mensaje enviado
+            </h2>
+
+            <p className="text-gray-600 leading-relaxed mb-8">
+              Tu mensaje fue enviado correctamente. Nuestro equipo revisará tu
+              solicitud y se pondrá en contacto contigo lo antes posible.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setModalExito(false)}
+              className="w-full bg-[#0f2e4f] text-white py-3 rounded-full font-semibold shadow-md hover:bg-[#173f73] transition duration-300"
+            >
+              Aceptar
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

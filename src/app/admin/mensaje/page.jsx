@@ -15,14 +15,29 @@ import {
 
 import { db } from "../../../lib/firebase";
 
-import { Search, Mail, Inbox, Clock, Eye, Trash2 } from "lucide-react";
+import {
+  Search,
+  Mail,
+  Inbox,
+  Clock,
+  Eye,
+  Trash2,
+  X,
+  AlertTriangle,
+  CheckCircle,
+} from "lucide-react";
 
 export default function MensajesAdmin() {
   const [open, setOpen] = useState(true);
   const [mensajes, setMensajes] = useState([]);
   const [mensajeSeleccionado, setMensajeSeleccionado] = useState(null);
+  const [mostrarContenido, setMostrarContenido] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("Todos");
+
+  const [modalEliminar, setModalEliminar] = useState(false);
+  const [mensajeAEliminar, setMensajeAEliminar] = useState(null);
+  const [notificacion, setNotificacion] = useState("");
 
   useEffect(() => {
     const q = query(collection(db, "mensajes"), orderBy("fecha", "desc"));
@@ -34,32 +49,53 @@ export default function MensajesAdmin() {
       }));
 
       setMensajes(datos);
-
-      if (datos.length > 0 && !mensajeSeleccionado) {
-        setMensajeSeleccionado(datos[0]);
-      }
     });
 
     return () => unsubscribe();
   }, []);
 
-  const seleccionarMensaje = async (mensaje) => {
+  const seleccionarMensaje = (mensaje) => {
     setMensajeSeleccionado(mensaje);
+    setMostrarContenido(false);
+  };
 
-    if (mensaje.estado === "Nuevo") {
-      await updateDoc(doc(db, "mensajes", mensaje.id), {
+  const leerMensaje = async () => {
+    if (!mensajeSeleccionado) return;
+
+    setMostrarContenido(true);
+
+    if (mensajeSeleccionado.estado === "Nuevo") {
+      await updateDoc(doc(db, "mensajes", mensajeSeleccionado.id), {
         estado: "Leído",
       });
     }
   };
 
-  const eliminarMensaje = async (id) => {
-    const confirmar = confirm("¿Seguro que deseas eliminar este mensaje?");
-    if (!confirmar) return;
+  const abrirModalEliminar = (mensaje) => {
+    setMensajeAEliminar(mensaje);
+    setModalEliminar(true);
+  };
 
-    await deleteDoc(doc(db, "mensajes", id));
+  const cancelarEliminar = () => {
+    setModalEliminar(false);
+    setMensajeAEliminar(null);
+  };
+
+  const confirmarEliminar = async () => {
+    if (!mensajeAEliminar) return;
+
+    await deleteDoc(doc(db, "mensajes", mensajeAEliminar.id));
+
     setMensajeSeleccionado(null);
-    alert("Mensaje eliminado");
+    setMostrarContenido(false);
+    setModalEliminar(false);
+    setMensajeAEliminar(null);
+
+    setNotificacion("Mensaje eliminado correctamente");
+
+    setTimeout(() => {
+      setNotificacion("");
+    }, 3000);
   };
 
   const mensajesFiltrados = mensajes.filter((mensaje) => {
@@ -92,6 +128,76 @@ export default function MensajesAdmin() {
   return (
     <div className="min-h-screen bg-[#f5f7fb] text-[#0f2e4f]">
       <AdminSidebar open={open} setOpen={setOpen} />
+
+      {notificacion && (
+        <div className="fixed top-6 right-6 z-[999] bg-white border border-green-100 shadow-lg rounded-2xl px-5 py-4 flex items-center gap-3">
+          <div className="bg-green-100 text-green-600 p-2 rounded-xl">
+            <CheckCircle size={22} />
+          </div>
+
+          <div>
+            <p className="font-bold text-[#0f2e4f]">Acción realizada</p>
+            <p className="text-sm text-gray-500">{notificacion}</p>
+          </div>
+        </div>
+      )}
+
+      {modalEliminar && (
+        <div className="fixed inset-0 z-[998] bg-black/40 backdrop-blur-sm flex items-center justify-center px-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-7 relative">
+            <button
+              onClick={cancelarEliminar}
+              className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition"
+            >
+              <X size={22} />
+            </button>
+
+            <div className="w-16 h-16 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-5">
+              <AlertTriangle size={34} />
+            </div>
+
+            <h2 className="text-2xl font-extrabold text-[#0f2e4f]">
+              ¿Eliminar mensaje?
+            </h2>
+
+            <p className="text-gray-500 text-sm mt-3 leading-relaxed">
+              Esta acción eliminará permanentemente el mensaje seleccionado.
+              No podrás recuperarlo después.
+            </p>
+
+            {mensajeAEliminar && (
+              <div className="mt-5 bg-[#f5f7fb] rounded-2xl p-4">
+                <p className="text-xs text-gray-500 font-semibold">
+                  Mensaje de
+                </p>
+                <p className="font-bold text-[#0f2e4f] mt-1">
+                  {mensajeAEliminar.nombre}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {mensajeAEliminar.asunto}
+                </p>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-3 mt-7">
+              <button
+                onClick={cancelarEliminar}
+                className="w-full px-5 py-3 rounded-xl font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={confirmarEliminar}
+                className="w-full px-5 py-3 rounded-xl font-semibold bg-red-600 text-white hover:bg-red-700 transition flex items-center justify-center gap-2"
+              >
+                <Trash2 size={18} />
+                Sí, eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main
         className={`min-h-screen px-8 py-8 transition-all duration-300 ${
@@ -257,9 +363,31 @@ export default function MensajesAdmin() {
                   </h3>
 
                   <p className="text-sm text-gray-500 mt-4 max-w-md leading-relaxed">
-                    Aquí aparecerá el nombre, correo, asunto y contenido
-                    completo del mensaje seleccionado.
+                    Aquí aparecerá la información del mensaje cuando el
+                    administrador decida leerlo.
                   </p>
+                </div>
+              ) : !mostrarContenido ? (
+                <div className="flex flex-col items-center justify-center text-center py-16">
+                  <div className="w-20 h-20 rounded-2xl bg-[#eef3ff] text-[#5577f2] flex items-center justify-center mb-5">
+                    <Mail size={36} />
+                  </div>
+
+                  <h3 className="text-2xl font-extrabold text-[#0f2e4f]">
+                    Mensaje seleccionado
+                  </h3>
+
+                  <p className="text-sm text-gray-500 mt-4 max-w-md leading-relaxed">
+                    Para revisar el contenido completo enviado por el cliente,
+                    presiona el botón de lectura.
+                  </p>
+
+                  <button
+                    onClick={leerMensaje}
+                    className="mt-6 bg-[#0f2e4f] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#173f73] transition"
+                  >
+                    Leer mensaje
+                  </button>
                 </div>
               ) : (
                 <div>
@@ -300,16 +428,14 @@ export default function MensajesAdmin() {
                       Mensaje
                     </p>
 
-                    <p className="text-gray-700 leading-relaxed">
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
                       {mensajeSeleccionado.mensaje}
                     </p>
                   </div>
 
                   <div className="flex justify-end">
                     <button
-                      onClick={() =>
-                        eliminarMensaje(mensajeSeleccionado.id)
-                      }
+                      onClick={() => abrirModalEliminar(mensajeSeleccionado)}
                       className="flex items-center gap-2 bg-red-50 text-red-600 px-5 py-3 rounded-xl font-semibold hover:bg-red-100 transition"
                     >
                       <Trash2 size={18} />
