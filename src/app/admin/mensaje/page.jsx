@@ -130,7 +130,7 @@ export default function MensajesAdmin() {
       <AdminSidebar open={open} setOpen={setOpen} />
 
       {notificacion && (
-        <div className="fixed top-6 right-6 z-[999] bg-white border border-green-100 shadow-lg rounded-2xl px-5 py-4 flex items-center gap-3">
+        <div className="fixed top-6 right-6 z-999 bg-white border border-green-100 shadow-lg rounded-2xl px-5 py-4 flex items-center gap-3">
           <div className="bg-green-100 text-green-600 p-2 rounded-xl">
             <CheckCircle size={22} />
           </div>
@@ -143,7 +143,7 @@ export default function MensajesAdmin() {
       )}
 
       {modalEliminar && (
-        <div className="fixed inset-0 z-[998] bg-black/40 backdrop-blur-sm flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-998 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4">
           <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-7 relative">
             <button
               onClick={cancelarEliminar}
@@ -289,7 +289,7 @@ export default function MensajesAdmin() {
                   </p>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
+                <div className="divide-y divide-gray-100 max-h-150 overflow-y-auto">
                   {mensajesFiltrados.map((mensaje) => (
                     <button
                       key={mensaje.id}

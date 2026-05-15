@@ -14,12 +14,7 @@ import {
 
 import { db } from "../../../lib/firebase";
 
-import {
-  List,
-  CheckSquare,
-  ArrowRight,
-  Mail,
-} from "lucide-react";
+import { List, CheckSquare, ArrowRight, Mail } from "lucide-react";
 
 export default function DashboardAdmin() {
   const [open, setOpen] = useState(true);
@@ -42,17 +37,19 @@ export default function DashboardAdmin() {
       setCotizaciones(data);
     });
 
-    const unsubscribeMensajes = onSnapshot(
+    const qMensajes = query(
       collection(db, "mensajes"),
-      (snapshot) => {
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        setMensajes(data);
-      }
+      orderBy("fecha", "desc")
     );
+
+    const unsubscribeMensajes = onSnapshot(qMensajes, (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setMensajes(data);
+    });
 
     return () => {
       unsubscribeCotizaciones();
@@ -61,16 +58,48 @@ export default function DashboardAdmin() {
   }, []);
 
   const solicitudesPendientes = cotizaciones.filter(
-    (item) => item.estado === "Pendiente" || !item.estado
+    (item) =>
+      item.estado === "Pendiente" ||
+      item.estado === "Nueva" ||
+      !item.estado
   ).length;
 
   const solicitudesAtendidas = cotizaciones.filter(
-    (item) => item.estado === "Atendida"
+    (item) =>
+      item.estado === "Atendida" ||
+      item.estado === "Completada" ||
+      item.estado === "Finalizada"
   ).length;
 
   const mensajesNoLeidos = mensajes.filter(
-    (item) => item.estado === "No leído" || item.leido === false
+    (item) =>
+      item.estado === "No leído" ||
+      item.estado === "Nuevo" ||
+      item.leido === false ||
+      !item.estado
   ).length;
+
+  const ultimaSolicitudPendiente = cotizaciones.find(
+    (item) =>
+      item.estado === "Pendiente" ||
+      item.estado === "Nueva" ||
+      !item.estado
+  );
+
+  const ultimaSolicitudAtendida = cotizaciones.find(
+    (item) =>
+      item.estado === "Atendida" ||
+      item.estado === "Completada" ||
+      item.estado === "Finalizada"
+  );
+
+  const ultimoMensajeNuevo = mensajes.find(
+    (item) =>
+      item.estado === "No leído" ||
+      item.estado === "Nuevo" ||
+      item.leido === false ||
+      !item.estado
+  );
 
   const formatearFecha = (fecha) => {
     if (!fecha) return "Sin fecha";
@@ -116,7 +145,13 @@ export default function DashboardAdmin() {
               icon={<List size={34} />}
               title="Solicitudes nuevas"
               number={solicitudesPendientes}
-              text="Pendientes por revisar"
+              text={
+                ultimaSolicitudPendiente
+                  ? ultimaSolicitudPendiente.servicio ||
+                    ultimaSolicitudPendiente.nombreEmpresa ||
+                    "Nueva solicitud registrada"
+                  : "Sin solicitudes pendientes"
+              }
               href="/admin/cotizacion"
             />
 
@@ -124,7 +159,14 @@ export default function DashboardAdmin() {
               icon={<Mail size={34} />}
               title="Mensajes recibidos"
               number={mensajesNoLeidos}
-              text="No leídos"
+              text={
+                ultimoMensajeNuevo
+                  ? ultimoMensajeNuevo.asunto ||
+                    ultimoMensajeNuevo.mensaje ||
+                    ultimoMensajeNuevo.nombre ||
+                    "Nuevo mensaje recibido"
+                  : "Sin mensajes nuevos"
+              }
               href="/admin/mensaje"
             />
 
@@ -132,7 +174,13 @@ export default function DashboardAdmin() {
               icon={<CheckSquare size={34} />}
               title="Solicitudes atendidas"
               number={solicitudesAtendidas}
-              text="Registradas como atendidas"
+              text={
+                ultimaSolicitudAtendida
+                  ? ultimaSolicitudAtendida.servicio ||
+                    ultimaSolicitudAtendida.nombreEmpresa ||
+                    "Solicitud marcada como atendida"
+                  : "Sin solicitudes atendidas"
+              }
               href="/admin/cotizacion"
             />
           </div>
@@ -164,9 +212,13 @@ export default function DashboardAdmin() {
                     <th className="py-4 px-4 font-bold rounded-l-xl">
                       Cliente
                     </th>
+
                     <th className="py-4 px-4 font-bold">Servicio</th>
+
                     <th className="py-4 px-4 font-bold">Fecha</th>
+
                     <th className="py-4 px-4 font-bold">Estado</th>
+
                     <th className="py-4 px-4 font-bold rounded-r-xl">
                       Acción
                     </th>
@@ -204,7 +256,9 @@ export default function DashboardAdmin() {
                         <td className="py-4 px-4">
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              item.estado === "Atendida"
+                              item.estado === "Atendida" ||
+                              item.estado === "Completada" ||
+                              item.estado === "Finalizada"
                                 ? "bg-green-100 text-green-700"
                                 : "bg-yellow-100 text-yellow-700"
                             }`}
@@ -257,7 +311,7 @@ function Card({ icon, title, number, text, href }) {
           {number}
         </h3>
 
-        <p className="text-sm text-gray-500 mt-1">{text}</p>
+        <p className="text-sm text-gray-500 mt-2 line-clamp-2">{text}</p>
       </div>
     </div>
   );

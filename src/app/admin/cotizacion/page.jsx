@@ -23,6 +23,8 @@ import {
   Eye,
   Trash2,
   X,
+  ExternalLink,
+  Paperclip,
 } from "lucide-react";
 
 export default function CotizacionesAdmin() {
@@ -32,6 +34,10 @@ export default function CotizacionesAdmin() {
   const [filtroEstado, setFiltroEstado] = useState("Todas");
   const [filtroServicio, setFiltroServicio] = useState("Todos");
   const [cotizacionSeleccionada, setCotizacionSeleccionada] = useState(null);
+
+  const [modalEliminar, setModalEliminar] = useState(false);
+  const [modalExito, setModalExito] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, "cotizaciones"), orderBy("fecha", "desc"));
@@ -93,13 +99,26 @@ export default function CotizacionesAdmin() {
     });
   };
 
-  const eliminarCotizacion = async (id) => {
-    const confirmar = confirm("¿Seguro que deseas eliminar esta cotización?");
-    if (!confirmar) return;
+  const eliminarCotizacion = async () => {
+    if (!cotizacionSeleccionada) return;
 
-    await deleteDoc(doc(db, "cotizaciones", id));
-    setCotizacionSeleccionada(null);
-    alert("Cotización eliminada");
+    try {
+      setEliminando(true);
+
+      await deleteDoc(doc(db, "cotizaciones", cotizacionSeleccionada.id));
+
+      setModalEliminar(false);
+      setCotizacionSeleccionada(null);
+      setModalExito(true);
+
+      setTimeout(() => {
+        setModalExito(false);
+      }, 2500);
+    } catch (error) {
+      console.error("Error al eliminar la cotización:", error);
+    } finally {
+      setEliminando(false);
+    }
   };
 
   const getColorEstado = (estado) => {
@@ -197,7 +216,7 @@ export default function CotizacionesAdmin() {
                   <option value="Todos">Todos</option>
                   <option value="Etiquetado">Etiquetado</option>
                   <option value="Poliza">Póliza</option>
-                  <option value="Soporte">Soporte</option>
+                  <option value="Soporte Técnico">Soporte Técnico</option>
                   <option value="Suministro">Suministro</option>
                 </select>
               </div>
@@ -398,7 +417,8 @@ export default function CotizacionesAdmin() {
                 />
               </SeccionDetalle>
 
-              {obtenerServicio(cotizacionSeleccionada) === "Soporte" && (
+              {obtenerServicio(cotizacionSeleccionada) ===
+                "Soporte Técnico" && (
                 <SeccionDetalle titulo="Diagnóstico técnico">
                   <InputDetalle
                     label="Tipo de equipo"
@@ -433,6 +453,11 @@ export default function CotizacionesAdmin() {
                   <TextareaDetalle
                     label="Comentarios adicionales"
                     value={cotizacionSeleccionada.comentarios}
+                  />
+
+                  <ArchivoDetalle
+                    label="Imagen o video del problema"
+                    url={cotizacionSeleccionada.archivoAdjunto}
                   />
                 </SeccionDetalle>
               )}
@@ -472,6 +497,11 @@ export default function CotizacionesAdmin() {
                   <InputDetalle
                     label="¿Cuenta con diseño?"
                     value={cotizacionSeleccionada.cuentaDiseno}
+                  />
+
+                  <ArchivoDetalle
+                    label="Diseño de etiqueta"
+                    url={cotizacionSeleccionada.disenoEtiquetaUrl}
                   />
 
                   <InputDetalle
@@ -577,7 +607,7 @@ export default function CotizacionesAdmin() {
 
             <div className="flex justify-end gap-4 mt-8">
               <button
-                onClick={() => eliminarCotizacion(cotizacionSeleccionada.id)}
+                onClick={() => setModalEliminar(true)}
                 className="flex items-center gap-2 bg-red-50 text-red-600 px-5 py-3 rounded-xl font-semibold hover:bg-red-100 transition"
               >
                 <Trash2 size={18} />
@@ -594,6 +624,60 @@ export default function CotizacionesAdmin() {
           </div>
         </div>
       )}
+
+      {modalEliminar && (
+        <div className="fixed inset-0 bg-black/40 z-60 flex items-center justify-center px-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-7 text-center">
+            <div className="w-16 h-16 mx-auto rounded-full bg-red-50 text-red-600 flex items-center justify-center mb-5">
+              <Trash2 size={30} />
+            </div>
+
+            <h3 className="text-2xl font-extrabold text-[#0f2e4f]">
+              Eliminar cotización
+            </h3>
+
+            <p className="text-gray-500 mt-3 leading-relaxed">
+              Esta acción eliminará permanentemente la solicitud de cotización.
+              ¿Deseas continuar?
+            </p>
+
+            <div className="flex gap-3 mt-7">
+              <button
+                onClick={() => setModalEliminar(false)}
+                disabled={eliminando}
+                className="w-full bg-gray-100 text-gray-700 px-5 py-3 rounded-xl font-semibold hover:bg-gray-200 transition disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={eliminarCotizacion}
+                disabled={eliminando}
+                className="w-full bg-red-600 text-white px-5 py-3 rounded-xl font-semibold hover:bg-red-700 transition disabled:opacity-60"
+              >
+                {eliminando ? "Eliminando..." : "Sí, eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalExito && (
+        <div className="fixed top-6 right-6 z-70 bg-white border border-green-100 shadow-xl rounded-2xl px-6 py-4 flex items-center gap-4">
+          <div className="w-11 h-11 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold">
+            ✓
+          </div>
+
+          <div>
+            <h4 className="font-extrabold text-[#0f2e4f]">
+              Cotización eliminada
+            </h4>
+            <p className="text-sm text-gray-500">
+              La solicitud se eliminó correctamente.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -605,9 +689,7 @@ function SeccionDetalle({ titulo, children }) {
         {titulo}
       </h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {children}
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>
     </div>
   );
 }
@@ -638,6 +720,53 @@ function TextareaDetalle({ label, value }) {
         rows={5}
         className="w-full mt-2 border border-gray-200 rounded-xl px-4 py-3 bg-gray-50 text-gray-700 resize-none outline-none"
       />
+    </div>
+  );
+}
+
+function ArchivoDetalle({ label, url }) {
+  if (!url) {
+    return (
+      <div className="md:col-span-2">
+        <label className="text-sm font-semibold text-gray-700">
+          {label}
+        </label>
+
+        <div className="mt-2 border border-gray-200 rounded-2xl px-4 py-4 bg-gray-50 text-gray-500 text-sm">
+          Sin archivo adjunto
+        </div>
+      </div>
+    );
+  }
+
+  const esVideo =
+    url.includes(".mp4") ||
+    url.includes(".mov") ||
+    url.includes("/video/upload");
+
+  return (
+    <div className="md:col-span-2">
+      <label className="text-sm font-semibold text-gray-700">
+        {label}
+      </label>
+
+      <div className="mt-3 border border-gray-200 rounded-2xl overflow-hidden bg-gray-50">
+        {esVideo ? (
+          <video
+            controls
+            className="w-full max-h-112.5 object-cover bg-black"
+          >
+            <source src={url} />
+            Tu navegador no soporta videos.
+          </video>
+        ) : (
+          <img
+            src={url}
+            alt="Archivo adjunto"
+            className="w-full max-h-125 object-contain bg-white"
+          />
+        )}
+      </div>
     </div>
   );
 }

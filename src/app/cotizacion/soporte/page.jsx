@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "../../../lib/firebase";
+import { db } from "../../../lib/firebase";
 
 export default function SoporteTecnico() {
   const [formData, setFormData] = useState({
@@ -23,8 +22,40 @@ export default function SoporteTecnico() {
   const [archivoAdjunto, setArchivoAdjunto] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [mensajeError, setMensajeError] = useState("");
-
   const [modalExito, setModalExito] = useState(false);
+
+  const subirArchivoCloudinary = async (archivo) => {
+  const data = new FormData();
+
+  data.append("file", archivo);
+
+  data.append(
+    "upload_preset",
+    process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+  );
+
+  data.append("folder", "datasolutions/soporte");
+
+  const respuesta = await fetch(
+    `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/auto/upload`,
+    {
+      method: "POST",
+      body: data,
+    }
+  );
+
+  const resultado = await respuesta.json();
+
+  if (!respuesta.ok) {
+    console.log("Error Cloudinary:", resultado);
+
+    throw new Error(
+      resultado?.error?.message || "Error al subir archivo"
+    );
+  }
+
+  return resultado.secure_url;
+};
 
   const handleChange = (e) => {
     setFormData({
@@ -36,7 +67,25 @@ export default function SoporteTecnico() {
   };
 
   const handleFileChange = (e) => {
-    setArchivoAdjunto(e.target.files[0]);
+    const archivo = e.target.files[0];
+
+    if (!archivo) return;
+
+    const tiposPermitidos = [
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "video/mp4",
+      "video/quicktime",
+    ];
+
+    if (!tiposPermitidos.includes(archivo.type)) {
+      setMensajeError("Solo puedes subir archivos PNG, JPG, JPEG, MP4 o MOV.");
+      setArchivoAdjunto(null);
+      return;
+    }
+
+    setArchivoAdjunto(archivo);
     setMensajeError("");
   };
 
@@ -64,17 +113,11 @@ export default function SoporteTecnico() {
       let archivoUrl = "";
 
       if (archivoAdjunto) {
-        const archivoRef = ref(
-          storage,
-          `soporte-archivos/${Date.now()}-${archivoAdjunto.name}`
-        );
-
-        await uploadBytes(archivoRef, archivoAdjunto);
-        archivoUrl = await getDownloadURL(archivoRef);
+        archivoUrl = await subirArchivoCloudinary(archivoAdjunto);
       }
 
       await addDoc(collection(db, "cotizaciones"), {
-        categoria: "Soporte",
+        tipoServicio: "Soporte Técnico",
 
         nombreEmpresa: formData.nombreEmpresa,
         correo: formData.correo,
@@ -112,11 +155,14 @@ export default function SoporteTecnico() {
 
       setArchivoAdjunto(null);
     } catch (error) {
-      console.log(error);
-      setMensajeError("Ocurrió un error al enviar la solicitud.");
-    } finally {
-      setEnviando(false);
-    }
+  console.log("ERROR COMPLETO:", error);
+
+  setMensajeError(
+    error.message || "Ocurrió un error al enviar la solicitud."
+  );
+} finally {
+  setEnviando(false);
+}
   };
 
   return (
@@ -347,7 +393,7 @@ export default function SoporteTecnico() {
               <input
                 id="archivoAdjunto"
                 type="file"
-                accept="image/*,video/*"
+                accept="image/png,image/jpeg,image/jpg,video/mp4,video/quicktime"
                 onChange={handleFileChange}
                 className="hidden"
               />
@@ -397,45 +443,46 @@ export default function SoporteTecnico() {
           </div>
         </form>
       </section>
+
       {modalExito && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-    <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl">
-      <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-[#0f2e4f]">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-9 w-9"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-      </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-[#0f2e4f]">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-9 w-9"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
 
-      <h2 className="mb-3 text-2xl font-extrabold text-[#0f2e4f]">
-        Solicitud enviada
-      </h2>
+            <h2 className="mb-3 text-2xl font-extrabold text-[#0f2e4f]">
+              Solicitud enviada
+            </h2>
 
-      <p className="mb-7 text-sm leading-relaxed text-gray-600">
-        Tu solicitud de cotización fue enviada correctamente. Nuestro equipo
-        revisará la información y se pondrá en contacto contigo.
-      </p>
+            <p className="mb-7 text-sm leading-relaxed text-gray-600">
+              Tu solicitud de cotización fue enviada correctamente. Nuestro
+              equipo revisará la información y se pondrá en contacto contigo.
+            </p>
 
-      <button
-        type="button"
-        onClick={() => setModalExito(false)}
-        className="w-full rounded-full bg-[#0f2e4f] px-6 py-3 font-semibold text-white shadow-md transition hover:bg-[#173f73]"
-      >
-        Aceptar
-      </button>
-    </div>
-  </div>
-)}
+            <button
+              type="button"
+              onClick={() => setModalExito(false)}
+              className="w-full rounded-full bg-[#0f2e4f] px-6 py-3 font-semibold text-white shadow-md transition hover:bg-[#173f73]"
+            >
+              Aceptar
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
