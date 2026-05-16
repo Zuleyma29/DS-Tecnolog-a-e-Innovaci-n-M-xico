@@ -11,8 +11,20 @@ import {
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 
+import { signOut } from "firebase/auth";
+import { useRouter } from "next/navigation";
+import { auth } from "../../../lib/firebase";
+
 export default function AdminSidebar({ open, setOpen }) {
   const pathname = usePathname();
+
+  const router = useRouter();
+
+const handleLogout = async () => {
+  await signOut(auth);
+  router.push("/admin/login");
+};
+
 
   const menuItems = [
     {
@@ -34,12 +46,12 @@ export default function AdminSidebar({ open, setOpen }) {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(!open)}
-        className="fixed top-6 right-6 z-50 bg-white p-3 rounded-2xl shadow-md border border-gray-200 rounded-xl hover:bg-gray-100 transition text-[#173f73]">
-        
-        {open ? <X size={24} /> : <Menu size={24} />}
-      </button>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-4 text-red-600 font-bold hover:text-red-700 transition">
+          <LogOut size={22} />
+            Cerrar sesión
+        </button>
 
       <aside
         className={`fixed top-0 left-0 h-screen bg-white border-r border-gray-200 shadow-sm z-40 transition-all duration-300 ${open ? "w-72" : "w-0 overflow-hidden" }`}>

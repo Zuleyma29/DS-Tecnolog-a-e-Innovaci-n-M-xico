@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import AdminSidebar from "../components/AdminSidebar";
+import ProtectedRoute from "../components/ProtectedRoute";
 
 import {
   collection,
@@ -116,175 +117,177 @@ export default function DashboardAdmin() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#f5f7fb] text-[#12345a]">
-      <AdminSidebar open={open} setOpen={setOpen} />
+    <ProtectedRoute>
+      <div className="min-h-screen flex bg-[#f5f7fb] text-[#12345a]">
+        <AdminSidebar open={open} setOpen={setOpen} />
 
-      <main
-        className={`min-h-screen w-full px-8 py-8 transition-all duration-300 ${
-          open ? "ml-72" : "ml-0"
-        }`}
-      >
-        <section className="max-w-7xl mx-auto">
-          <div className="mb-10">
-            <p className="text-sm font-semibold text-[#5577f2] mb-2">
-              Área administrativa
-            </p>
+        <main
+          className={`min-h-screen w-full px-8 py-8 transition-all duration-300 ${
+            open ? "ml-72" : "ml-0"
+          }`}
+        >
+          <section className="max-w-7xl mx-auto">
+            <div className="mb-10">
+              <p className="text-sm font-semibold text-[#5577f2] mb-2">
+                Área administrativa
+              </p>
 
-            <h1 className="text-3xl md:text-4xl font-extrabold text-[#0f2e4f]">
-              Panel Administrativo
-            </h1>
+              <h1 className="text-3xl md:text-4xl font-extrabold text-[#0f2e4f]">
+                Panel Administrativo
+              </h1>
 
-            <p className="text-gray-500 mt-2">
-              Bienvenido, aquí puedes revisar las solicitudes de cotización y
-              mensajes recibidos desde el sitio web.
-            </p>
-          </div>
+              <p className="text-gray-500 mt-2">
+                Bienvenido, aquí puedes revisar las solicitudes de cotización y
+                mensajes recibidos desde el sitio web.
+              </p>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <Card
-              icon={<List size={34} />}
-              title="Solicitudes nuevas"
-              number={solicitudesPendientes}
-              text={
-                ultimaSolicitudPendiente
-                  ? ultimaSolicitudPendiente.servicio ||
-                    ultimaSolicitudPendiente.nombreEmpresa ||
-                    "Nueva solicitud registrada"
-                  : "Sin solicitudes pendientes"
-              }
-              href="/admin/cotizacion"
-            />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+              <Card
+                icon={<List size={34} />}
+                title="Solicitudes nuevas"
+                number={solicitudesPendientes}
+                text={
+                  ultimaSolicitudPendiente
+                    ? ultimaSolicitudPendiente.servicio ||
+                      ultimaSolicitudPendiente.nombreEmpresa ||
+                      "Nueva solicitud registrada"
+                    : "Sin solicitudes pendientes"
+                }
+                href="/admin/cotizacion"
+              />
 
-            <Card
-              icon={<Mail size={34} />}
-              title="Mensajes recibidos"
-              number={mensajesNoLeidos}
-              text={
-                ultimoMensajeNuevo
-                  ? ultimoMensajeNuevo.asunto ||
-                    ultimoMensajeNuevo.mensaje ||
-                    ultimoMensajeNuevo.nombre ||
-                    "Nuevo mensaje recibido"
-                  : "Sin mensajes nuevos"
-              }
-              href="/admin/mensaje"
-            />
+              <Card
+                icon={<Mail size={34} />}
+                title="Mensajes recibidos"
+                number={mensajesNoLeidos}
+                text={
+                  ultimoMensajeNuevo
+                    ? ultimoMensajeNuevo.asunto ||
+                      ultimoMensajeNuevo.mensaje ||
+                      ultimoMensajeNuevo.nombre ||
+                      "Nuevo mensaje recibido"
+                    : "Sin mensajes nuevos"
+                }
+                href="/admin/mensaje"
+              />
 
-            <Card
-              icon={<CheckSquare size={34} />}
-              title="Solicitudes atendidas"
-              number={solicitudesAtendidas}
-              text={
-                ultimaSolicitudAtendida
-                  ? ultimaSolicitudAtendida.servicio ||
-                    ultimaSolicitudAtendida.nombreEmpresa ||
-                    "Solicitud marcada como atendida"
-                  : "Sin solicitudes atendidas"
-              }
-              href="/admin/cotizacion"
-            />
-          </div>
+              <Card
+                icon={<CheckSquare size={34} />}
+                title="Solicitudes atendidas"
+                number={solicitudesAtendidas}
+                text={
+                  ultimaSolicitudAtendida
+                    ? ultimaSolicitudAtendida.servicio ||
+                      ultimaSolicitudAtendida.nombreEmpresa ||
+                      "Solicitud marcada como atendida"
+                    : "Sin solicitudes atendidas"
+                }
+                href="/admin/cotizacion"
+              />
+            </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-10">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-lg font-bold text-[#0f2e4f]">
-                  Solicitudes recientes
-                </h2>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-10">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-lg font-bold text-[#0f2e4f]">
+                    Solicitudes recientes
+                  </h2>
 
-                <p className="text-sm text-gray-500">
-                  Últimas solicitudes enviadas por clientes.
-                </p>
+                  <p className="text-sm text-gray-500">
+                    Últimas solicitudes enviadas por clientes.
+                  </p>
+                </div>
+
+                <Link
+                  href="/admin/cotizacion"
+                  className="text-sm bg-[#0f2e4f] text-white px-4 py-2 rounded-xl hover:bg-[#173f73] transition"
+                >
+                  Ver todas
+                </Link>
               </div>
 
-              <Link
-                href="/admin/cotizacion"
-                className="text-sm bg-[#0f2e4f] text-white px-4 py-2 rounded-xl hover:bg-[#173f73] transition"
-              >
-                Ver todas
-              </Link>
-            </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead>
+                    <tr className="bg-[#eef3ff] text-[#0f2e4f]">
+                      <th className="py-4 px-4 font-bold rounded-l-xl">
+                        Cliente
+                      </th>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead>
-                  <tr className="bg-[#eef3ff] text-[#0f2e4f]">
-                    <th className="py-4 px-4 font-bold rounded-l-xl">
-                      Cliente
-                    </th>
+                      <th className="py-4 px-4 font-bold">Servicio</th>
 
-                    <th className="py-4 px-4 font-bold">Servicio</th>
+                      <th className="py-4 px-4 font-bold">Fecha</th>
 
-                    <th className="py-4 px-4 font-bold">Fecha</th>
+                      <th className="py-4 px-4 font-bold">Estado</th>
 
-                    <th className="py-4 px-4 font-bold">Estado</th>
-
-                    <th className="py-4 px-4 font-bold rounded-r-xl">
-                      Acción
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {cotizaciones.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan="5"
-                        className="py-12 text-center text-gray-500"
-                      >
-                        Aún no hay solicitudes registradas.
-                      </td>
+                      <th className="py-4 px-4 font-bold rounded-r-xl">
+                        Acción
+                      </th>
                     </tr>
-                  ) : (
-                    cotizaciones.map((item) => (
-                      <tr
-                        key={item.id}
-                        className="border-b border-gray-100 hover:bg-gray-50 transition"
-                      >
-                        <td className="py-4 px-4 font-semibold text-[#0f2e4f]">
-                          {item.nombreEmpresa || item.nombre || "Sin nombre"}
-                        </td>
+                  </thead>
 
-                        <td className="py-4 px-4 text-gray-600">
-                          {item.servicio || "Cotización"}
-                        </td>
-
-                        <td className="py-4 px-4 text-gray-600">
-                          {formatearFecha(item.fecha)}
-                        </td>
-
-                        <td className="py-4 px-4">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              item.estado === "Atendida" ||
-                              item.estado === "Completada" ||
-                              item.estado === "Finalizada"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-yellow-100 text-yellow-700"
-                            }`}
-                          >
-                            {item.estado || "Pendiente"}
-                          </span>
-                        </td>
-
-                        <td className="py-4 px-4">
-                          <Link
-                            href="/admin/cotizacion"
-                            className="text-[#5577f2] font-semibold hover:underline"
-                          >
-                            Ver
-                          </Link>
+                  <tbody>
+                    {cotizaciones.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan="5"
+                          className="py-12 text-center text-gray-500"
+                        >
+                          Aún no hay solicitudes registradas.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      cotizaciones.map((item) => (
+                        <tr
+                          key={item.id}
+                          className="border-b border-gray-100 hover:bg-gray-50 transition"
+                        >
+                          <td className="py-4 px-4 font-semibold text-[#0f2e4f]">
+                            {item.nombreEmpresa || item.nombre || "Sin nombre"}
+                          </td>
+
+                          <td className="py-4 px-4 text-gray-600">
+                            {item.servicio || "Cotización"}
+                          </td>
+
+                          <td className="py-4 px-4 text-gray-600">
+                            {formatearFecha(item.fecha)}
+                          </td>
+
+                          <td className="py-4 px-4">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                item.estado === "Atendida" ||
+                                item.estado === "Completada" ||
+                                item.estado === "Finalizada"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-yellow-100 text-yellow-700"
+                              }`}
+                            >
+                              {item.estado || "Pendiente"}
+                            </span>
+                          </td>
+
+                          <td className="py-4 px-4">
+                            <Link
+                              href="/admin/cotizacion"
+                              className="text-[#5577f2] font-semibold hover:underline"
+                            >
+                              Ver
+                            </Link>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        </section>
-      </main>
-    </div>
+          </section>
+        </main>
+      </div>
+    </ProtectedRoute>
   );
 }
 

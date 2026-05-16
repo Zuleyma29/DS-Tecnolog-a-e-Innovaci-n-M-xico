@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AdminSidebar from "../components/AdminSidebar";
-
+import ProtectedRoute from "../components/ProtectedRoute";
 import {
   collection,
   onSnapshot,
@@ -126,6 +126,7 @@ export default function MensajesAdmin() {
   };
 
   return (
+    <ProtectedRoute>
     <div className="min-h-screen bg-[#f5f7fb] text-[#0f2e4f]">
       <AdminSidebar open={open} setOpen={setOpen} />
 
@@ -449,5 +450,6 @@ export default function MensajesAdmin() {
         </section>
       </main>
     </div>
+    </ProtectedRoute>
   );
 }
